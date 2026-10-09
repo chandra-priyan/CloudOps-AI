@@ -1,0 +1,21 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: cloudops-config
+  namespace: default
+data:
+  NODE_ENV: "production"
+  PORT: "5000"
+  MONGODB_URI: "mongodb://mongodb-primary:27017/cloudops_ai"
+  AI_SERVICE_URL: "http://cloudops-ai-service:8000"
+  PROMETHEUS_URL: "http://prometheus:9090"
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: cloudops-secrets
+  namespace: default
+type: Opaque
+stringData:
+  JWT_SECRET: "cloudops_super_secret_jwt_key_2026"
+  MONGO_PASSWORD: "cloudops_secure_password"

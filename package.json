@@ -1,0 +1,27 @@
+{
+  "name": "cloudops-ai",
+  "version": "1.0.0",
+  "description": "AI-Powered DevOps Monitoring and Incident Troubleshooting Platform",
+  "private": true,
+  "scripts": {
+    "dev:backend": "npm --prefix backend run dev",
+    "dev:frontend": "npm --prefix frontend run dev",
+    "build:frontend": "npm --prefix frontend run build",
+    "test:backend": "npm --prefix backend test",
+    "test:frontend": "npm --prefix frontend test",
+    "test:ai": "cd ai-service && pytest",
+    "test:all": "npm run test:backend && npm run test:frontend && npm run test:ai"
+  },
+  "keywords": [
+    "devops",
+    "monitoring",
+    "kubernetes",
+    "ai",
+    "troubleshooting",
+    "ollama",
+    "express",
+    "react"
+  ],
+  "author": "CloudOps AI Team",
+  "license": "MIT"
+}

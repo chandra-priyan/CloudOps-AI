@@ -1,0 +1,106 @@
+version: '3.8'
+
+services:
+  # Mode 1: Core MongoDB
+  mongodb:
+    image: mongo:7.0
+    container_name: cloudops-mongodb
+    restart: always
+    ports:
+      - "27017:27017"
+    environment:
+      MONGO_INITDB_DATABASE: cloudops_ai
+    volumes:
+      - mongo_data:/data/db
+    networks:
+      - cloudops-net
+
+  # Mode 1: Core Backend API
+  backend:
+    build:
+      context: ./backend
+      dockerfile: ../docker/Dockerfile.backend
+    container_name: cloudops-backend
+    restart: always
+    ports:
+      - "5000:5000"
+    environment:
+      PORT: 5000
+      MONGODB_URI: mongodb://mongodb:27017/cloudops_ai
+      AI_SERVICE_URL: http://ai-service:8000
+      PROMETHEUS_URL: http://prometheus:9090
+      K8S_IN_CLUSTER: "false"
+      ENABLE_REMEDIATION_ALLOWLIST: "true"
+      NODE_ENV: production
+    depends_on:
+      - mongodb
+    networks:
+      - cloudops-net
+
+  # Mode 1: Core Frontend Dashboard
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: ../docker/Dockerfile.frontend
+    container_name: cloudops-frontend
+    restart: always
+    ports:
+      - "80:80"
+    depends_on:
+      - backend
+    networks:
+      - cloudops-net
+
+  # Mode 2: Observability - AI Troubleshooting Service (FastAPI)
+  ai-service:
+    profiles: ["observability", "full"]
+    build:
+      context: ./ai-service
+      dockerfile: ../docker/Dockerfile.ai-service
+    container_name: cloudops-ai-service
+    restart: always
+    ports:
+      - "8000:8000"
+    environment:
+      PORT: 8000
+      OLLAMA_BASE_URL: http://host.docker.internal:11434
+      OLLAMA_MODEL: qwen2.5-coder
+    networks:
+      - cloudops-net
+
+  # Mode 2: Observability - Prometheus Monitoring Server
+  prometheus:
+    profiles: ["observability", "full"]
+    image: prom/prometheus:v2.48.0
+    container_name: cloudops-prometheus
+    restart: always
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml
+      - ./monitoring/alerts.yml:/etc/prometheus/alerts.yml
+    networks:
+      - cloudops-net
+
+  # Mode 2: Observability - Grafana Dashboard Visualization
+  grafana:
+    profiles: ["observability", "full"]
+    image: grafana/grafana:10.2.0
+    container_name: cloudops-grafana
+    restart: always
+    ports:
+      - "3000:3000"
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+    volumes:
+      - ./monitoring/grafana/datasources:/etc/grafana/provisioning/datasources
+      - ./monitoring/grafana/dashboards:/etc/grafana/provisioning/dashboards
+    networks:
+      - cloudops-net
+
+networks:
+  cloudops-net:
+    driver: bridge
+
+volumes:
+  mongo_data:

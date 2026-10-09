@@ -1,0 +1,27 @@
+groups:
+  - name: cloudops_alerts
+    rules:
+      - alert: HighRequestErrorRate
+        expr: rate(http_requests_total{status=~"5.."}[5m]) / rate(http_requests_total[5m]) > 0.05
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "High HTTP 5xx Error Rate detected on {{ $labels.instance }}"
+          description: "Error rate is above 5% for more than 1 minute."
+
+      - alert: HighCpuUtilization
+        expr: process_cpu_seconds_total > 80
+        for: 2m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High CPU utilization detected on {{ $labels.instance }}"
+
+      - alert: ContainerCrashLoop
+        expr: increase(container_restarts_total[15m]) > 3
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Container crash loop detected on {{ $labels.instance }}"
