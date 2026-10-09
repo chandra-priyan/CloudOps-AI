@@ -10,7 +10,7 @@ const { getAllowlist, handleRemediation } = require('../controllers/remediationC
 const { listScenarios, runSimulation } = require('../controllers/simulationController');
 const { listAuditLogs } = require('../controllers/auditController');
 const { getSettings, updateSettings } = require('../controllers/settingsController');
-const { authenticate } = require('../middleware/auth');
+const { authenticate, requireRole } = require('../middleware/auth');
 
 // Auth routes
 router.post('/auth/login', login);
@@ -31,19 +31,19 @@ router.post('/incidents/:id/notes', authenticate, addIncidentNote);
 // AI Troubleshooting route
 router.post('/ai/diagnose', authenticate, diagnoseIncident);
 
-// Safe Remediation routes
+// Safe Remediation routes (Privileged: requires operator or admin role)
 router.get('/remediation/allowlist', authenticate, getAllowlist);
-router.post('/remediation/execute', authenticate, handleRemediation);
+router.post('/remediation/execute', authenticate, requireRole('admin', 'operator'), handleRemediation);
 
-// Failure Simulation Lab routes
+// Failure Simulation Lab routes (Privileged: requires operator or admin role)
 router.get('/simulations', authenticate, listScenarios);
-router.post('/simulations/trigger', authenticate, runSimulation);
+router.post('/simulations/trigger', authenticate, requireRole('admin', 'operator'), runSimulation);
 
 // Audit Logs route
 router.get('/audit-logs', authenticate, listAuditLogs);
 
-// Settings routes
+// Settings routes (Privileged: requires admin role)
 router.get('/settings', authenticate, getSettings);
-router.put('/settings', authenticate, updateSettings);
+router.put('/settings', authenticate, requireRole('admin'), updateSettings);
 
 module.exports = router;

@@ -2,12 +2,19 @@ const jwt = require('jsonwebtoken');
 const config = require('../config');
 
 const authenticate = (req, res, next) => {
-  const authHeader = req.headers.authorization;
-  
-  // For dev environment simplicity, allow basic Bearer or fallback admin session
-  if (!authHeader || !authHeader.startsWith('Bearer ')) {
-    req.user = { id: 'usr-1', email: 'devops@cloudops.ai', role: 'admin' };
+  const authHeader = req.headers.authorization || req.headers.Authorization;
+
+  // Allow opt-in bypass ONLY if explicitly configured in environment variables for dev testing
+  if (process.env.ALLOW_DEV_AUTH_BYPASS === 'true' && (!authHeader || !authHeader.startsWith('Bearer '))) {
+    req.user = { id: 'usr-1', email: 'devops@cloudops.ai', role: 'admin', name: 'DevOps Engineer' };
     return next();
+  }
+
+  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    return res.status(401).json({
+      status: 'error',
+      message: 'Authentication required. No Bearer token provided.'
+    });
   }
 
   const token = authHeader.split(' ')[1];
@@ -16,18 +23,23 @@ const authenticate = (req, res, next) => {
     req.user = decoded;
     next();
   } catch (err) {
-    // Return dev user if token decoding fails in local dev
-    req.user = { id: 'usr-1', email: 'devops@cloudops.ai', role: 'admin' };
-    next();
+    return res.status(401).json({
+      status: 'error',
+      message: 'Invalid or expired authentication token.'
+    });
   }
 };
 
-const requireRole = (role) => {
+const requireRole = (...allowedRoles) => {
   return (req, res, next) => {
-    if (!req.user || (req.user.role !== role && req.user.role !== 'admin')) {
+    if (!req.user) {
+      return res.status(401).json({ status: 'error', message: 'Authentication required.' });
+    }
+    const userRole = req.user.role || 'viewer';
+    if (!allowedRoles.includes(userRole) && userRole !== 'admin') {
       return res.status(403).json({
         status: 'error',
-        message: `Forbidden: Action requires ${role} role permissions`
+        message: `Forbidden: Action requires one of [${allowedRoles.join(', ')}] role permissions.`
       });
     }
     next();

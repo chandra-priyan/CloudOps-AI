@@ -6,9 +6,9 @@ const rateLimit = require('express-rate-limit');
 const config = require('./config');
 const { connectDB } = require('./config/db');
 const errorHandler = require('./middleware/errorHandler');
-const { metricsMiddleware, handleMetrics } = require('./middleware/metrics');
+const { metricsMiddleware } = require('./middleware/metrics');
 const apiRoutes = require('./routes');
-const { getHealth, getReadiness } = require('./controllers/healthController');
+const { getHealth, getReadiness, handleMetrics } = require('./controllers/healthController');
 
 const app = express();
 
